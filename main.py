@@ -212,8 +212,8 @@ class Config:
     git_push_interval_seconds: float = 3_600.0
 
     # ---- Telegram notifications (optional; leave blank to disable) ----------
-    telegram_bot_token: str = ""
-    telegram_chat_id: str = ""
+    telegram_bot_token: str = "8247131531:AAFlZgZxdxJ1OS2uRWNeUfvV9tWTfwJUpXs"
+    telegram_chat_id: str = "-1004423229118"
     telegram_summary_interval_seconds: float = 3_600.0
 
     # ---- external fallback (optional; empty list = never fetch externally) --
