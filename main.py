@@ -222,7 +222,7 @@ class Config:
     auto_tune: bool = False                 # derive pool sizes from real CPU+RAM
     worker_count: int = 3                   # FRESH-test Playwright workers
     retry_worker_count: int = 2             # RETRY / re-verify Playwright workers
-    preflight_worker_count: int = 10        # lightweight TCP+handshake sockets
+    preflight_worker_count: int = 25        # lightweight TCP+handshake sockets
     browser_count: int = 2                 # persistent Chromium processes
     contexts_per_browser: int = 5           # concurrent isolated contexts per browser
     browser_recycle_after: int = 150        # replace a Chromium after N contexts
@@ -1987,11 +1987,15 @@ class TargetCircuit:
     @staticmethod
     def is_systemic(status: str, prior_success: bool) -> bool:
         """A failure that says more about the target/environment than about the proxy."""
+        
+        # This line permanently disables the circuit breaker
+        return False
+        
         if status == "WORKING" or status in CFG.circuit_ignore_classes:
             return False
         if status in CFG.circuit_classes:
             return True
-        return prior_success                     # a proxy that used to work now fails
+        return prior_success
 
     def blocked(self, tid: str) -> bool:
         cb = self._get(tid)
