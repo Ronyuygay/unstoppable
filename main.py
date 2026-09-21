@@ -219,12 +219,12 @@ MAX_PREFLIGHT_WORKERS = 2000            # hard ceiling for the socket pool
 @dataclass
 class Config:
     # ---- hardware / concurrency --------------------------------------------
-    auto_tune: bool = True                  # derive pool sizes from real CPU+RAM
-    worker_count: int = 6                   # FRESH-test Playwright workers
-    retry_worker_count: int = 6             # RETRY / re-verify Playwright workers
-    preflight_worker_count: int = 512       # lightweight TCP+handshake sockets
-    browser_count: int = 3                  # persistent Chromium processes
-    contexts_per_browser: int = 5           # concurrent isolated contexts per browser
+    auto_tune: bool = False                 # derive pool sizes from real CPU+RAM
+    worker_count: int = 2                   # FRESH-test Playwright workers
+    retry_worker_count: int = 1             # RETRY / re-verify Playwright workers
+    preflight_worker_count: int = 10        # lightweight TCP+handshake sockets
+    browser_count: int = 1                  # persistent Chromium processes
+    contexts_per_browser: int = 3           # concurrent isolated contexts per browser
     browser_recycle_after: int = 150        # replace a Chromium after N contexts
     fd_limit_target: int = 16384            # RLIMIT_NOFILE we try to reach at boot
     headless: bool = True
@@ -233,8 +233,8 @@ class Config:
 
     # ---- user agent / fingerprint -------------------------------------------
     ua_rotation: bool = True                # vary UA/viewport/locale/tz per session
-    custom_ua_profiles: list = field(default_factory=list)   # [{"ua","width","height","locale","tz"}]
-    ua_pool_remote: bool = False            # pull a remote desktop-Chrome UA list
+    custom_ua_profiles: list = field(default_factory=list)   
+    ua_pool_remote: bool = False            # DO NOT fetch remote UA list during testing
     ua_pool_refresh_seconds: float = 3600.0
     enable_stealth_script: bool = True
     session_cache_enabled: bool = True      # reuse cookies per (proxy, target)
@@ -243,8 +243,8 @@ class Config:
     post_load_wait_seconds: float = 25.0
     navigation_timeout_ms: int = 45_000
     network_idle_timeout_ms: int = 12_000
-    connect_jitter_min: float = 0.5
-    connect_jitter_max: float = 3.0
+    connect_jitter_min: float = 2.0         # Increased to prevent connection bursts
+    connect_jitter_max: float = 10.0        # Increased to prevent connection bursts
     stability_poll_seconds: float = 5.0
     hard_timeout_extra_seconds: float = 90.0
 
@@ -370,12 +370,11 @@ class Config:
     state_dir: str = "state"
     output_file: str = "validated_proxies.txt"
 
-    fallback_urls: list = field(default_factory=lambda: [
-        "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt"
-    ])
+    # Removed default massive proxy list to prevent GitHub account suspension
+    fallback_urls: list = field(default_factory=list)
     fallback_min_working: int = 50
     fallback_cooldown_seconds: float = 1_800.0
-    fetch_on_start: bool = True             # pull the source list once at boot
+    fetch_on_start: bool = False            # DO NOT fetch automatically at boot
 
     # ---- git auto-update -------------------------------------------------------
     git_enabled: bool = False
@@ -4392,6 +4391,9 @@ async def preflight_worker(rt: Runtime):
                     await rt.store.mark_preflight(pid, False, None, None)
             finally:
                 rt.preflight_queue.task_done()
+            
+            # Added a strict delay to prevent network bursts and CPU spikes
+            await asyncio.sleep(0.5)
     finally:
         rt.preflight_workers_alive = max(0, rt.preflight_workers_alive - 1)
 
