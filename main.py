@@ -2434,6 +2434,7 @@ async def _inner_validate(browser, proxy: str, target: Target, profile: dict,
                     and not final_url.startswith("chrome-error://"):
                 with contextlib.suppress(Exception):
                     title = await page.title()
+                
                 # Rule A still wins over Rule B: a redirect to a "proxy detected"
                 # notice is a failure, not a success.
                 probe = ""
@@ -2444,8 +2445,33 @@ async def _inner_validate(browser, proxy: str, target: Target, profile: dict,
                                             "proxy detection triggered after redirect", title,
                                             final_url=final_url, redirected=True)
                 
-                # 30 second wait working  function
-                await page.wait_for_timeout(30000) 
+                # --- Advanced Human-Like Behavior (Wait & Interact) ---
+                # Instead of a robotic 30s wait, we use a random wait time between 25 and 40 seconds.
+                # During this time, the bot will realistically scroll and move the mouse to bypass bot detection.
+                import random
+                target_wait_ms = random.randint(25000, 40000)
+                elapsed_wait_ms = 0
+                
+                try:
+                    while elapsed_wait_ms < target_wait_ms:
+                        # 1. Random human-like mouse movement
+                        if random.random() > 0.4:
+                            x = random.randint(100, 800)
+                            y = random.randint(100, 600)
+                            await page.mouse.move(x, y)
+                        
+                        # 2. Variable scrolling distance
+                        scroll_amount = random.randint(100, 500)
+                        await page.mouse.wheel(0, scroll_amount)
+                        
+                        # 3. Reading pause (variable delay between scrolls)
+                        pause_ms = random.randint(1500, 4000)
+                        await page.wait_for_timeout(pause_ms)
+                        elapsed_wait_ms += pause_ms
+                except Exception:
+                    # Fallback just in case the page closes abruptly or target is lost
+                    pass
+                # ------------------------------------------------------
                 
                 return ValidationResult("WORKING", http_status, elapsed(), latency, None, title,
                                         final_url=final_url, redirected=True)
