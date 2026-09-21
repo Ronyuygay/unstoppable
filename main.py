@@ -220,11 +220,11 @@ MAX_PREFLIGHT_WORKERS = 2000            # hard ceiling for the socket pool
 class Config:
     # ---- hardware / concurrency --------------------------------------------
     auto_tune: bool = False                 # derive pool sizes from real CPU+RAM
-    worker_count: int = 2                   # FRESH-test Playwright workers
-    retry_worker_count: int = 1             # RETRY / re-verify Playwright workers
+    worker_count: int = 3                   # FRESH-test Playwright workers
+    retry_worker_count: int = 2             # RETRY / re-verify Playwright workers
     preflight_worker_count: int = 10        # lightweight TCP+handshake sockets
-    browser_count: int = 1                  # persistent Chromium processes
-    contexts_per_browser: int = 3           # concurrent isolated contexts per browser
+    browser_count: int = 2                 # persistent Chromium processes
+    contexts_per_browser: int = 5           # concurrent isolated contexts per browser
     browser_recycle_after: int = 150        # replace a Chromium after N contexts
     fd_limit_target: int = 16384            # RLIMIT_NOFILE we try to reach at boot
     headless: bool = True
@@ -2443,6 +2443,10 @@ async def _inner_validate(browser, proxy: str, target: Target, profile: dict,
                     return ValidationResult("TARGET_VALIDATION_FAILED", http_status, elapsed(), latency,
                                             "proxy detection triggered after redirect", title,
                                             final_url=final_url, redirected=True)
+                
+                # 30 second wait working  function
+                await page.wait_for_timeout(30000) 
+                
                 return ValidationResult("WORKING", http_status, elapsed(), latency, None, title,
                                         final_url=final_url, redirected=True)
 
